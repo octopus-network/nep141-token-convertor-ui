@@ -3,12 +3,37 @@ import getConfig from "@/domain/near/config";
 import {AccountId, ConversionPool, ConvertAction, FtMetaData, NearChangeMethod} from "@/domain/near/types";
 import {Near} from "near-api-js";
 import {NearGas} from "@/domain/near/NearGas";
-import {NearAmount, READABLE_AMOUNT, TRANSFER_AMOUNT} from "@/domain/near/NearAmount";
+import {API_AMOUNT, NearAmount, READABLE_AMOUNT, TRANSFER_AMOUNT} from "@/domain/near/NearAmount";
 import {ftGetTokenMetadata} from "@/domain/near/ft/methods";
 import BN from "bn.js";
+import {Nep145Contract} from "@/domain/near/storage";
+import {FTStorageBalance} from "@/domain/near/ft/types";
 
 export class ConvertorContract {
   public static contract_id: string = getConfig().CONVERTOR_CONTRACT_ID;
+
+
+  public static get_storage_fee_gap_of(account_id: AccountId): Promise<TRANSFER_AMOUNT> {
+    return wallet.account().viewFunction(
+      ConvertorContract.contract_id,
+      "get_storage_fee_gap_of",{
+        account_id: account_id
+      })
+  }
+
+
+  public static storage_deposit(account_id: AccountId|null, registration_only: boolean|null, deposit_near: API_AMOUNT): NearChangeMethod {
+    return new NearChangeMethod(
+      ConvertorContract.contract_id,
+      "storage_deposit",
+      {
+        account_id: account_id,
+        registration_only: registration_only
+      },
+      NearGas.TGas(50),
+      deposit_near
+    )
+  }
 
   public static get_whitelist(): Promise<FtMetaData[]> {
     return wallet.account()
@@ -46,28 +71,8 @@ export class ConvertorContract {
         out_token_rate: out_token_rate
       },
       NearGas.TGas(),
-      NearAmount.near_amount("0.1")
+      NearAmount.near_amount()
     )
-  }
-
-  public static async select_best_pool(
-    in_token: AccountId,
-    out_token: AccountId,
-    in_token_amount: READABLE_AMOUNT): Promise<[ConversionPool,TRANSFER_AMOUNT]|null> {
-    let decimals = (await ftGetTokenMetadata(in_token)).decimals;
-    let in_token_transfer_amount = NearAmount.readable_to_transfer(in_token_amount,decimals)
-    console.log("in_token", in_token);
-    console.log("decimals", decimals);
-    console.log("in_token_transfer_amount", in_token_transfer_amount);
-    return wallet.account().viewFunction(
-      this.contract_id,
-      'select_best_pool',
-      {
-        in_token: in_token,
-        out_token: out_token,
-        in_token_amount: in_token_transfer_amount
-    })
-
   }
 
   public static async deposit_token_into_pool(
@@ -87,7 +92,6 @@ export class ConvertorContract {
       NearAmount.ONE_YOCTO_NEAR
     )
   }
-
   public static async convert(
     pool_id: number,
     in_token_id: AccountId,
@@ -108,7 +112,7 @@ export class ConvertorContract {
         amount: in_token_transfer_amount,
         msg: JSON.stringify({Convert: {convert_action: convertAction}})
       },
-      NearGas.TGas(),
+      NearGas.TGas(75),
       NearAmount.ONE_YOCTO_NEAR
       )
   }

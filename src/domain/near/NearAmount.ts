@@ -24,6 +24,10 @@ export class NearAmount {
     return new BN(utils.format.parseNearAmount(amount_of_near)!);
   }
 
+  public static near_transfer_to_api(amount: TRANSFER_AMOUNT = "1"): API_AMOUNT {
+    return new BN(amount)
+  }
+
   public static readable_to_transfer(amount: READABLE_AMOUNT, decimals: number): TRANSFER_AMOUNT {
     if (decimals === null || decimals === undefined) return amount;
     const [wholePart, fracPart = ""] = amount.split(".");
@@ -43,11 +47,6 @@ export class NearAmount {
       .substring(0, decimals);
 
     return `${wholeStr}.${fractionStr}`.replace(/\.?0+$/, "");
-  }
-
-  public static transfer_to_api(amount: TRANSFER_AMOUNT, decimals: number): API_AMOUNT {
-    let readable = NearAmount.transfer_to_readable(amount,decimals);
-    return new BN(Number(readable));
   }
 
 }

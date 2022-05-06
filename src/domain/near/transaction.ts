@@ -6,7 +6,10 @@ import getConfig from "@/domain/near/config";
 import {baseDecode} from "borsh";
 import {PublicKey} from "near-api-js/lib/utils";
 import {NearGas} from "@/domain/near/NearGas";
-import {NearAmount} from "@/domain/near/NearAmount";
+import {NearAmount, READABLE_AMOUNT} from "@/domain/near/NearAmount";
+import {Nep141Contract} from "@/domain/near/ft/methods";
+import {FTStorageBalance} from "@/domain/near/ft/types";
+import {ConvertorContract} from "@/domain/near/convertor";
 
 const config = getConfig();
 export interface NearViewFunctionInfo {
@@ -141,5 +144,30 @@ export class NearActions {
   }
 }
 
-export abstract class NearTransactionInfoFactory {
+export abstract class NearTransactionBooks {
+  static async check_storage_convert(
+    convertor: AccountId = wallet.getAccountId(),
+    out_token: AccountId,
+    pool_id: number,
+    in_token_id: AccountId,
+    in_token_amount: READABLE_AMOUNT): Promise<NearTransaction> {
+    let out_token_contract = new Nep141Contract(out_token);
+    let out_token_storage_balance: FTStorageBalance | null = await out_token_contract.storage_balance_of(convertor);
+
+    let transaction = new NearTransaction();
+
+    if(!out_token_storage_balance||out_token_storage_balance.total=="0") {
+      transaction.add_action(out_token,out_token_contract.storage_deposit(convertor,null).toAction());
+    }
+    let convertor_storage_fee_gap = await ConvertorContract.get_storage_fee_gap_of(convertor);
+    if(convertor_storage_fee_gap!="0") {
+      transaction.add_action(
+        ConvertorContract.contract_id,
+        ConvertorContract.storage_deposit(convertor,null,NearAmount.near_transfer_to_api(convertor_storage_fee_gap)).toAction())
+    }
+
+    let convert_action = (await ConvertorContract.convert(pool_id,in_token_id,in_token_amount)).toAction()
+    transaction.add_action(in_token_id,convert_action)
+    return transaction
+  }
 }

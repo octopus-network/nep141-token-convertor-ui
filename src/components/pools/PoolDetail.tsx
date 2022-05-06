@@ -6,6 +6,8 @@ import {useTokenMetadata} from "@/hooks/convertor";
 import {ChangeEvent, useState} from "react";
 import {NearAmount} from "@/domain/near/NearAmount";
 import {ConvertorContract} from "@/domain/near/convertor";
+import {NearTransactionBooks} from "@/domain/near/transaction";
+import {wallet} from "@/domain/near/global";
 
 export function SwapButton() {
   return <div style={{display: "flex", justifyContent: "space-around", alignItems: "center"}}>
@@ -67,7 +69,11 @@ export function PoolDetail({pool}: {pool: ConversionPool}) {
     </div>
     <Row justify={"center"}>
       <Col>
-        <Button type={"primary"} onClick={()=>ConvertorContract.convert(pool.id,pool.in_token,inTokenAmount).then(e=>e.call())}>convert</Button>
+        <Button type={"primary"} onClick={
+          () =>
+            NearTransactionBooks.check_storage_convert(wallet.getAccountId(), pool.out_token, pool.id, pool.in_token, inTokenAmount)
+              .then(e => e.execute())
+        }>convert</Button>
       </Col>
     </Row>
   </div>

@@ -22,3 +22,8 @@ export const nearMetadata: TokenMetadata = {
   decimals: 24,
   icon: "https://near.org/wp-content/themes/near-19/assets/img/brand-icon.png",
 };
+
+export interface FTStorageBalance {
+  total: string;
+  available: string;
+}
