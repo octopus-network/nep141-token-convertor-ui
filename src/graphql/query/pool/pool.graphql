@@ -1,0 +1,22 @@
+query conversionPools(
+  $limit: Int!
+  $offset: Int!
+  $orderBy: ConversionPool_orderBy!
+  $orderDirection: OrderDirection!
+) {
+  conversionPools(
+    first: $limit
+    skip: $offset
+    orderBy: $orderBy
+    orderDirection: $orderDirection
+  ) {
+    id
+    creator
+    in_token
+    in_token_balance
+    out_token
+    out_token_balance
+    reversible
+    out_token_rate
+  }
+}
